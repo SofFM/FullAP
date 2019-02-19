@@ -82,7 +82,10 @@ def configure():
     password = input('Enter password [1234567890]:')
     password = '1234567890' if password == '' else password
 
-    return create_config_json(wlan, inet, ip, netmask, ssid, password)
+    encryption = input('Enter encryption [free]:')
+    encryption = 'free' if encryption == '' else encryption
+
+    return create_config_json(wlan, inet, ip, netmask, ssid, encryption, password)
 
 
 def load_config(config_path):
@@ -108,9 +111,9 @@ def save_config(config_path, config_json):
     return True
 
 
-def create_config_json(wlan='wlan0', inet=None, ip='192.168.45.1', netmask='255.255.255.0', ssid='MyAccessPoint',
+def create_config_json(wlan='wlan0', inet=None, ip='192.168.45.1', netmask='255.255.255.0', ssid='MyAccessPoint', encryption='free',
                        password='1234567890'):
-    return {'wlan': wlan, 'inet': inet, 'ip': ip, 'netmask': netmask, 'ssid': ssid, 'password': password}
+    return {'wlan': wlan, 'inet': inet, 'ip': ip, 'netmask': netmask, 'ssid': ssid, 'encryption': encryption, 'password': password}
 
 
 def main():
@@ -123,7 +126,11 @@ def main():
                         help='path to config file')
     parser.add_argument('-w', "--wlan", required=False, default='wlan0',
                         help='wi-fi interface that will be used to create hotspot')
-    parser.add_argument('-i', "--inet", required=False, default=None, help='forwarding interface')
+    #parser.add_argument('-i', "--inet", required=False, default=None, help='forwarding interface')
+    parser.add_argument('-i', "--inet", required=False, default='eth0', help='forwarding interface')
+    #del this one
+    #parser.add_argument('-en', "--encryption", required=False, default='free', help='encryption')
+    parser.add_argument('-en', "--encryption", required=False, default='free', help='encryption: free/wep/wpa')
     parser.add_argument('-ip', required=False, default='192.168.45.1', help='ip address of this machine in new '
                                                                             'network')
     parser.add_argument('-n', "--netmask", required=False, default='255.255.255.0',
@@ -160,7 +167,7 @@ def main():
             logging.error("Config loading error")
             return 1
     else:
-        config_json = create_config_json(args.wlan, args.inet, args.ip, args.netmask, args.ssid, args.password)
+        config_json = create_config_json(args.wlan, args.inet, args.ip, args.netmask, args.ssid, args.encryption, args.password)
 
         if args.save_config:
             save_config(args.config_path, config_json)
