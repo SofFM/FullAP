@@ -53,15 +53,65 @@ rsn_pairwise=CCMP
 #For No encryption, you don't need to set any options
 '''
 
+config_wep = '''
+#sets the wifi interface to use, is wlan0 in most cases
+interface={2}
+#driver to use, nl80211 works in most cases
+driver=nl80211
+#sets the ssid of the virtual wifi access point
+ssid={0}
+#sets the mode of wifi, depends upon the devices you will be using. It can be a,b,g,n. Setting to g ensures backward compatiblity.
+hw_mode=g
+#sets the channel for your wifi
+channel=6
+#macaddr_acl sets options for mac address filtering. 0 means "accept unless in deny list"
+macaddr_acl=0
+#setting ignore_broadcast_ssid to 1 will disable the broadcasting of ssid
+ignore_broadcast_ssid=0
+#Sets authentication algorithm
+#1 - only open system authentication
+#2 - both open system authentication and shared key authentication
+auth_algs=1
+#################################
+#####Sets WEP authentication#####
+#WEP is not recommended as it can be easily broken into
+wep_default_key=0
+wep_key0={1}    #5,13, or 16 characters
+#optionally you may also define wep_key2, wep_key3, and wep_key4
+#################################
+'''
+
+config_free = '''
+#sets the wifi interface to use, is wlan0 in most cases
+interface={1}
+#driver to use, nl80211 works in most cases
+driver=nl80211
+#sets the ssid of the virtual wifi access point
+ssid={0}
+#sets the mode of wifi, depends upon the devices you will be using. It can be a,b,g,n. Setting to g ensures backward compatiblity.
+hw_mode=g
+#sets the channel for your wifi
+channel=6
+#macaddr_acl sets options for mac address filtering. 0 means "accept unless in deny list"
+macaddr_acl=0
+#setting ignore_broadcast_ssid to 1 will disable the broadcasting of ssid
+ignore_broadcast_ssid=0
+#Sets authentication algorithm
+#1 - only open system authentication
+#2 - both open system authentication and shared key authentication
+auth_algs=1
+#For No encryption, you don't need to set any options
+'''
 
 class AccessPoint:
-    def __init__(self, wlan='wlan0', inet=None, ip='192.168.45.1', netmask='255.255.255.0', ssid='MyAccessPoint',
+    def __init__(self, wlan='wlan0', inet=None, ip='192.168.45.1', netmask='255.255.255.0', ssid='MyAccessPoint', encryption='free',
                  password='1234567890'):
         self.wlan = wlan
         self.inet = inet
         self.ip = ip
         self.netmask = netmask
         self.ssid = ssid
+        self.encryption=encryption
         self.password = password
         self.root_directory = "/etc/accesspoint/"
         self.hostapd_config_path = os.path.join(self.root_directory, "hostapd.config")
@@ -90,18 +140,33 @@ class AccessPoint:
 
         self.ssid = str(self.ssid)
 
-        if self.password is None:
-            logging.error("Password must not be None")
+        if self.encryption is None:
+            logging.error("E ncryption must not be None")
             return False
 
-        self.password = str(self.password)
+        self.encryption = str(self.encryption)
+
+        if self.encryption != "free":
+	    #print ("if self.encryption != 'free' WORK")
+            if self.password is None:
+                logging.error("Password must not be None")
+                return False
+
+            self.password = str(self.password)
 
         return True
 
     def _write_hostapd_config(self):
         with open(self.hostapd_config_path, 'w') as hostapd_config_file:
-            hostapd_config_file.write(config.format(self.ssid, self.password, self.wlan))
-
+            if self.encryption == "free":
+                hostapd_config_file.write(config_free.format(self.ssid, self.wlan))
+                #print("'free': WORK ")
+            elif self.encryption == "wep":
+                hostapd_config_file.write(config_wep.format(self.ssid, self.password, self.wlan))
+                #print("'wep': WORK ")
+            else:
+                hostapd_config_file.write(config.format(self.ssid, self.password, self.wlan))
+                #print("'wpa': WORK ")
         logging.debug("Hostapd config saved to %s", self.hostapd_config_path)
 
     def _validate_ip(self, addr):
@@ -118,7 +183,6 @@ class AccessPoint:
         if shutil.which('hostapd') is None:
             logging.error('hostapd executable not found. Make sure you have installed hostapd.')
             check = False
-
         if shutil.which('dnsmasq') is None:
             logging.error('dnsmasq executable not found. Make sure you have installed dnsmasq.')
             check = False
