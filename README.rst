@@ -152,5 +152,5 @@ This project is python3 compatible only, python2 is not tested at all.
 Idea
 ====
 
-This project is fork of https://github.com/Goblenus/pyaccesspoint (Prahlad Yeri - prahladyeri@yahoo.com)
+This project is fork of https://github.com/Goblenus/pyaccesspoint
 
